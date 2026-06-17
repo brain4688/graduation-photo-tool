@@ -375,15 +375,45 @@
       ctx.fillStyle = color;
       ctx.fillRect(0, drawH, canvasW, barH);
 
-      // 绘制文字（支持多行换行）
+      // 绘制文字（支持手动换行 + 自动换行适配图片宽度）
       if (text.trim()) {
         ctx.fillStyle = txtColor;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.font = `bold ${fontSize}px "${font}", serif`;
 
-        // 按换行符分割文本
-        const lines = text.split('\n').filter(l => l.trim() !== '');
+        // 有效绘制宽度（左右各留 20px 边距防止文字贴边）
+        const maxTextW = canvasW - 40;
+
+        // 自动换行函数：当单行文字超出画布宽度时自动拆分
+        function wrapLine(line) {
+          if (!line) return [];
+          // 如果该行宽度未超限，直接返回
+          if (ctx.measureText(line).width <= maxTextW) return [line];
+          const chars = line.split('');
+          const result = [];
+          let current = '';
+          for (let i = 0; i < chars.length; i++) {
+            const test = current + chars[i];
+            if (ctx.measureText(test).width > maxTextW && current.length > 0) {
+              result.push(current);
+              current = chars[i];
+            } else {
+              current = test;
+            }
+          }
+          if (current) result.push(current);
+          return result;
+        }
+
+        // 先按用户手动换行符分割，再对每行执行自动换行
+        const rawLines = text.split('\n').filter(l => l.trim() !== '');
+        const lines = [];
+        rawLines.forEach(line => {
+          const wrapped = wrapLine(line);
+          lines.push(...wrapped);
+        });
+
         const lineHeight = fontSize * 1.4;
         const totalTextH = lines.length * lineHeight;
         const startY = drawH + (barH - totalTextH) / 2 + lineHeight / 2;
