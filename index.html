@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>毕业合影美化工具</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Google Fonts 中文字体 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* 全局字体回退 */
+  body {
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    background: #f3f4f6;
+  }
+  /* 画布阴影 */
+  #previewCanvas {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  }
+  /* 滑块样式美化 */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: #d1d5db;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #dc2626;
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #dc2626;
+    cursor: pointer;
+    border: none;
+  }
+  /* 下拉框、输入框自适应 */
+  select, input[type="text"], textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* 手机端画布自适应 */
+  @media (max-width: 768px) {
+    #previewCanvas {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+    .panel-card {
+      padding: 12px !important;
+    }
+  }
+</style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+<!-- 页面标题 -->
+<h1 class="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-800" style="font-family:'Noto Serif SC',serif;">
+  毕业合影美化工具
+</h1>
+
+<!-- 主容器：电脑左右两栏，手机上下堆叠 -->
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+
+  <!-- ===== 左侧：设置面板 ===== -->
+  <div class="w-full md:w-[380px] flex-shrink-0 space-y-4">
+
+    <!-- 卡片：图片上传 -->
+    <div class="panel-card bg-white rounded-xl shadow p-5">
+      <label class="block text-sm font-semibold text-gray-700 mb-2">📷 上传照片（JPG / PNG）</label>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png"
+        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer">
+      <p id="uploadHint" class="text-xs text-gray-400 mt-1">请选择本地图片，全程浏览器处理不上传服务器</p>
+    </div>
+
+    <!-- 卡片：文字设置 -->
+    <div class="panel-card bg-white rounded-xl shadow p-5 space-y-4">
+      <h2 class="text-sm font-semibold text-gray-700 border-b pb-2">✏️ 文字设置</h2>
+
+      <!-- 底栏文字 -->
+      <div>
+        <label class="block text-xs text-gray-600 mb-1">底栏文字（支持换行，每行一条）</label>
+        <textarea id="textContent" rows="3" placeholder="第一行：2024届XX学院毕业合影&#10;第二行：摄于2024年6月"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-300 focus:border-red-400 outline-none resize-none"></textarea>
+      </div>
+
+      <!-- 文字字体 -->
+      <div>
+        <label class="block text-xs text-gray-600 mb-1">文字字体</label>
+        <select id="fontFamily" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-300 outline-none">
+          <option value="Noto Serif SC" selected>宋体古风（默认）</option>
+          <option value="Noto Sans SC">黑体</option>
+          <option value="KaiTi, STKaiti, serif">楷体</option>
+          <option value="FangSong, STFangSong, serif">仿宋</option>
+          <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
+        </select>
+      </div>
+
+      <!-- 文字字号滑块 -->
+      <div>
+        <label class="block text-xs text-gray-600 mb-1">文字字号：<span id="fontSizeVal" class="font-bold text-red-600">28</span> px</label>
+        <input type="range" id="fontSize" min="12" max="72" value="28" class="w-full">
+      </div>
+
+      <!-- 底栏高度滑块 -->
+      <div>
+        <label class="block text-xs text-gray-600 mb-1">底栏高度：<span id="barHeightVal" class="font-bold text-red-600">80</span> px</label>
+        <input type="range" id="barHeight" min="30" max="200" value="80" class="w-full">
+      </div>
+    </div>
+
+    <!-- 卡片：样式美化 -->
+    <div class="panel-card bg-white rounded-xl shadow p-5 space-y-4">
+      <h2 class="text-sm font-semibold text-gray-700 border-b pb-2">🎨 样式美化</h2>
+
+      <!-- 图片滤镜 -->
+      <div>
+        <label class="block text-xs text-gray-600 mb-1">图片滤镜</label>
+        <select id="filterType" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-300 outline-none">
+          <option value="none" selected>原图无滤镜</option>
+          <option value="bw">黑白复古</option>
+          <option value="warm">暖调复古</option>
+          <option value="grain">胶片颗粒</option>
+          <option value="cinema">青灰电影感</option>
+        </select>
+      </div>
+
+      <!-- 底栏颜色 -->
+      <div>
+        <label class="block text-xs text-gray-600 mb-1">底栏底色</label>
+        <select id="barColor" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-300 outline-none">
+          <option value="#e74c3c">浅红色</option>
+          <option value="#8b1a1a" selected>酒红色（默认）</option>
+          <option value="#4a0404">深暗红</option>
+          <option value="#111111">纯黑色</option>
+          <option value="#1a2a4a">深蓝色</option>
+          <option value="#3e2723">深棕色</option>
+        </select>
+      </div>
+
+      <!-- 文字颜色 -->
+      <div>
+        <label class="block text-xs text-gray-600 mb-1">文字颜色</label>
+        <select id="textColor" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-300 outline-none">
+          <option value="#FFFFFF" selected>白色（默认）</option>
+          <option value="#FFD700">金色</option>
+          <option value="#FFFACD">浅金色</option>
+          <option value="#F5DEB3">香槟金</option>
+          <option value="#FF6B6B">亮红色</option>
+          <option value="#FFA500">橙色</option>
+          <option value="#87CEEB">天蓝色</option>
+          <option value="#98FB98">薄荷绿</option>
+          <option value="#DDA0DD">浅紫色</option>
+          <option value="#FFFF99">淡黄色</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 卡片：操作按钮 -->
+    <div class="panel-card bg-white rounded-xl shadow p-5 space-y-3">
+      <button id="btnRefresh" class="w-full py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition text-sm">
+        🔄 手动刷新预览
+      </button>
+      <button id="btnExport" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition text-sm">
+        💾 一键导出高清 PNG
+      </button>
+      <p class="text-xs text-gray-400 text-center">修改参数自动刷新预览 | 图片本地处理保护隐私</p>
+    </div>
+  </div>
+
+  <!-- ===== 右侧：预览画布 ===== -->
+  <div class="flex-1 min-w-0">
+    <div class="panel-card bg-white rounded-xl shadow p-5">
+      <h2 class="text-sm font-semibold text-gray-700 border-b pb-2 mb-4">🖼️ 实时预览</h2>
+      <div id="canvasWrapper" class="flex justify-center items-start overflow-hidden">
+        <canvas id="previewCanvas" width="800" height="600" class="max-w-full rounded"></canvas>
+      </div>
+      <p id="canvasHint" class="text-xs text-gray-400 text-center mt-3">上传图片后自动显示预览效果</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== 使用教程（折叠） ===== -->
+<details class="max-w-7xl mx-auto mt-8 bg-white rounded-xl shadow p-5">
+  <summary class="cursor-pointer font-semibold text-gray-700 text-sm select-none">📖 使用教程 & 常见问题（点击展开）</summary>
+  <div class="mt-4 text-sm text-gray-600 space-y-4 leading-relaxed">
+    <div>
+      <h3 class="font-bold text-gray-800 mb-1">一、本地打开方法</h3>
+      <p>1. 将本 <code class="bg-gray-100 px-1 rounded">index.html</code> 文件保存到电脑任意位置。</p>
+      <p>2. 双击文件，使用 Chrome 或 Edge 浏览器打开即可使用，无需安装任何软件。</p>
+      <p>3. 上传本地照片，调整参数，点击"导出高清 PNG"保存成品。</p>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-800 mb-1">二、线上部署分享步骤</h3>
+      <p><strong>GitHub Pages：</strong>将文件上传至 GitHub 仓库 → Settings → Pages → 选择分支 → 生成公网链接。</p>
+      <p><strong>Vercel：</strong>注册 Vercel 账号 → Import 项目 → 自动部署 → 获得 <code class="bg-gray-100 px-1 rounded">xxx.vercel.app</code> 链接。</p>
+      <p><strong>DevFile / Netlify：</strong>直接拖拽 <code class="bg-gray-100 px-1 rounded">index.html</code> 文件到平台即可部署。</p>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-800 mb-1">三、故障自查方案</h3>
+      <p><strong>预览空白：</strong>①确认已上传图片 ②检查浏览器是否为最新版 ③尝试点击"手动刷新预览" ④检查图片文件是否损坏。</p>
+      <p><strong>图片加载失败：</strong>确认文件格式为 JPG 或 PNG，文件大小建议不超过 20MB。</p>
+      <p><strong>导出失败：</strong>确认浏览器允许下载权限，部分浏览器需手动允许弹窗。</p>
+      <p><strong>微信内置浏览器兼容问题：</strong>微信内置浏览器对 Canvas API 支持不完善，建议使用系统浏览器（Chrome/Edge）打开。</p>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-800 mb-1">四、隐私说明</h3>
+      <p>所有图片处理均在您的浏览器本地完成，不会上传至任何服务器。本工具为纯静态页面，无后端服务。</p>
+    </div>
+  </div>
+</details>
+
+<footer class="text-center text-xs text-gray-400 mt-8 pb-4">毕业合影美化工具 · 纯前端本地处理 · 保护您的隐私</footer>
+
+<!-- ===== JavaScript 核心逻辑 ===== -->
+<script>
+(function() {
+  'use strict';
+
+  // ===== DOM 元素引用 =====
+  const fileInput     = document.getElementById('fileInput');
+  const textContent   = document.getElementById('textContent');
+  const fontFamily    = document.getElementById('fontFamily');
+  const fontSizeRange = document.getElementById('fontSize');
+  const barHeightRange= document.getElementById('barHeight');
+  const filterType    = document.getElementById('filterType');
+  const barColor      = document.getElementById('barColor');
+  const textColor     = document.getElementById('textColor');
+  const btnRefresh    = document.getElementById('btnRefresh');
+  const btnExport     = document.getElementById('btnExport');
+  const canvas        = document.getElementById('previewCanvas');
+  const ctx           = canvas.getContext('2d');
+  const fontSizeVal   = document.getElementById('fontSizeVal');
+  const barHeightVal  = document.getElementById('barHeightVal');
+  const canvasHint    = document.getElementById('canvasHint');
+  const uploadHint    = document.getElementById('uploadHint');
+
+  // ===== 状态变量 =====
+  let loadedImage = null;   // 用户上传的原始图片对象
+  let imageLoadFailed = false;
+
+  // ===== 工具函数：等待字体加载 =====
+  function ensureFontsLoaded() {
+    if (document.fonts && document.fonts.ready) {
+      return document.fonts.ready;
+    }
+    return Promise.resolve();
+  }
+
+  // ===== 滤镜处理（使用离屏临时画布，防止主画布尺寸溢出） =====
+  function applyFilter(img, filterName) {
+    // 创建离屏画布，尺寸与原图一致
+    const offscreen = document.createElement('canvas');
+    offscreen.width = img.naturalWidth || img.width;
+    offscreen.height = img.naturalHeight || img.height;
+    const offCtx = offscreen.getContext('2d');
+
+    // 先绘制原图到离屏画布
+    offCtx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
+
+    // 获取像素数据进行滤镜处理
+    if (filterName === 'none') {
+      return offscreen; // 无需处理
+    }
+
+    const imageData = offCtx.getImageData(0, 0, offscreen.width, offscreen.height);
+    const data = imageData.data;
+
+    switch (filterName) {
+      case 'bw':
+        // 黑白复古：去色 + 微微偏暖
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
+          data[i]   = Math.min(255, gray + 10);   // R 微暖
+          data[i+1] = Math.min(255, gray + 5);    // G
+          data[i+2] = gray;                        // B
+        }
+        break;
+
+      case 'warm':
+        // 暖调复古：增加红/黄通道，降低蓝通道
+        for (let i = 0; i < data.length; i += 4) {
+          data[i]   = Math.min(255, data[i]   + 30);  // R
+          data[i+1] = Math.min(255, data[i+1] + 10);  // G
+          data[i+2] = Math.max(0,   data[i+2] - 20);  // B
+        }
+        break;
+
+      case 'grain':
+        // 胶片颗粒：增加随机噪点
+        for (let i = 0; i < data.length; i += 4) {
+          const noise = (Math.random() - 0.5) * 50;
+          data[i]   = Math.min(255, Math.max(0, data[i]   + noise));
+          data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise));
+          data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise));
+        }
+        break;
+
+      case 'cinema':
+        // 青灰电影感：降低饱和度，偏青灰调
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
+          data[i]   = Math.min(255, gray * 0.8 + data[i]   * 0.2 - 10);  // R 降低
+          data[i+1] = Math.min(255, gray * 0.8 + data[i+1] * 0.2);       // G 保持
+          data[i+2] = Math.min(255, gray * 0.8 + data[i+2] * 0.2 + 15);  // B 提升偏青
+        }
+        break;
+    }
+
+    offCtx.putImageData(imageData, 0, 0);
+    return offscreen;
+  }
+
+  // ===== 核心渲染函数 =====
+  function renderPreview() {
+    if (!loadedImage) {
+      // 未上传图片时清空画布并提示
+      canvas.width = 800;
+      canvas.height = 600;
+      ctx.fillStyle = '#f9fafb';
+      ctx.fillRect(0, 0, 800, 600);
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '16px "Noto Sans SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('请上传图片后查看预览效果', 400, 300);
+      canvasHint.textContent = '上传图片后自动显示预览效果';
+      return;
+    }
+
+    try {
+      // 读取参数
+      const fontSize   = parseInt(fontSizeRange.value) || 28;
+      const barH       = parseInt(barHeightRange.value) || 80;
+      const filter     = filterType.value;
+      const color      = barColor.value;
+      const txtColor   = textColor.value;
+      const font       = fontFamily.value;
+      const text       = textContent.value || '';
+
+      // 使用离屏画布应用滤镜（关键：防止主画布尺寸溢出导致空白）
+      const filteredCanvas = applyFilter(loadedImage, filter);
+
+      // 计算等比例缩放后的图片尺寸（基于画布宽度800px）
+      const canvasW = 800;
+      const imgW = filteredCanvas.width;
+      const imgH = filteredCanvas.height;
+      const scale = canvasW / imgW;
+      const drawH = Math.round(imgH * scale);
+
+      // 设置画布总高度 = 图片高度 + 底栏高度
+      canvas.width = canvasW;
+      canvas.height = drawH + barH;
+
+      // 清空画布
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制滤镜后的图片（等比例，不变形）
+      ctx.drawImage(filteredCanvas, 0, 0, canvasW, drawH);
+
+      // 绘制底栏色块
+      ctx.fillStyle = color;
+      ctx.fillRect(0, drawH, canvasW, barH);
+
+      // 绘制文字（支持多行换行）
+      if (text.trim()) {
+        ctx.fillStyle = txtColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `bold ${fontSize}px "${font}", serif`;
+
+        // 按换行符分割文本
+        const lines = text.split('\n').filter(l => l.trim() !== '');
+        const lineHeight = fontSize * 1.4;
+        const totalTextH = lines.length * lineHeight;
+        const startY = drawH + (barH - totalTextH) / 2 + lineHeight / 2;
+
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, canvasW / 2, startY + idx * lineHeight);
+        });
+      }
+
+      canvasHint.textContent = `画布尺寸：${canvasW} × ${drawH + barH}px | 图片等比例缩放展示`;
+
+    } catch (err) {
+      console.error('渲染出错：', err);
+      canvasHint.textContent = '⚠️ 渲染出错：' + err.message;
+    }
+  }
+
+  // ===== 图片上传处理 =====
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!file.type.match(/^image\/(jpeg|png)$/)) {
+      uploadHint.textContent = '⚠️ 请选择 JPG 或 PNG 格式的图片！';
+      uploadHint.classList.add('text-red-500');
+      loadedImage = null;
+      renderPreview();
+      return;
+    }
+
+    uploadHint.textContent = '⏳ 正在加载图片...';
+    uploadHint.classList.remove('text-red-500');
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const img = new Image();
+      img.onload = function() {
+        loadedImage = img;
+        imageLoadFailed = false;
+        uploadHint.textContent = `✅ 已加载：${file.name}（${img.width}×${img.height}px）`;
+        renderPreview();
+      };
+      img.onerror = function() {
+        loadedImage = null;
+        imageLoadFailed = true;
+        uploadHint.textContent = '⚠️ 图片加载失败，请检查文件是否损坏或格式是否正确';
+        uploadHint.classList.add('text-red-500');
+        renderPreview();
+      };
+      img.src = evt.target.result;
+    };
+    reader.onerror = function() {
+      uploadHint.textContent = '⚠️ 文件读取失败，请重试';
+      uploadHint.classList.add('text-red-500');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ===== 参数变化自动刷新预览 =====
+  const autoRefreshElements = [textContent, fontFamily, fontSizeRange, barHeightRange, filterType, barColor, textColor];
+  autoRefreshElements.forEach(el => {
+    el.addEventListener('input', function() {
+      // 更新滑块数值显示
+      fontSizeVal.textContent = fontSizeRange.value;
+      barHeightVal.textContent = barHeightRange.value;
+      // 自动刷新预览
+      renderPreview();
+    });
+  });
+
+  // ===== 手动刷新按钮 =====
+  btnRefresh.addEventListener('click', function() {
+    ensureFontsLoaded().then(() => {
+      renderPreview();
+    });
+  });
+
+  // ===== 一键导出高清 PNG =====
+  btnExport.addEventListener('click', function() {
+    if (!loadedImage) {
+      alert('请先上传图片！');
+      return;
+    }
+    // 确保预览最新
+    renderPreview();
+
+    try {
+      const link = document.createElement('a');
+      link.download = '毕业合影_' + new Date().toISOString().slice(0,10) + '.png';
+      link.href = canvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      alert('导出失败：' + err.message);
+    }
+  });
+
+  // ===== 初始化：等待字体加载后渲染默认画布 =====
+  ensureFontsLoaded().then(() => {
+    renderPreview();
+  });
+
+  // ===== 窗口大小变化时重新渲染（自适应） =====
+  let resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderPreview, 200);
+  });
+
+})();
+</script>
+
+</body>
+</html>
