@@ -111,13 +111,15 @@
       <!-- 文字字号滑块 -->
       <div>
         <label class="block text-xs text-gray-600 mb-1">文字字号：<span id="fontSizeVal" class="font-bold text-red-600">28</span> px</label>
-        <input type="range" id="fontSize" min="12" max="72" value="28" class="w-full">
+        <input type="range" id="fontSize" min="12" max="120" value="28" class="w-full">
+        <p class="text-xs text-gray-400 mt-1">范围 12~120px，原图越大字号可适当调大</p>
       </div>
 
       <!-- 底栏高度滑块 -->
       <div>
         <label class="block text-xs text-gray-600 mb-1">底栏高度：<span id="barHeightVal" class="font-bold text-red-600">80</span> px</label>
-        <input type="range" id="barHeight" min="30" max="200" value="80" class="w-full">
+        <input type="range" id="barHeight" min="10" max="500" value="80" class="w-full">
+        <p class="text-xs text-gray-400 mt-1">范围 10~500px，原图越大可适当调高</p>
       </div>
     </div>
 
