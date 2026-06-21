@@ -359,9 +359,10 @@
     const scale = targetW / imgW;
     const drawH = Math.round(imgH * scale);
 
-    // 按比例缩放底栏高度和字号（保证导出时视觉比例一致）
-    const scaledBarH = Math.round(barH * scale);
-    const scaledFont = Math.round(fontSize * scale);
+    // 预览（800px）直接使用用户设定值；导出（原图宽度）按比例放大
+    const isPreview = (targetW === 800);
+    const scaledBarH = isPreview ? barH : Math.round(barH * (targetW / 800));
+    const scaledFont = isPreview ? fontSize : Math.round(fontSize * (targetW / 800));
 
     // 设置画布总高度 = 图片高度 + 底栏高度
     targetCanvas.width = targetW;
